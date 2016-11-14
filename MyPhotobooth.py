@@ -25,6 +25,8 @@ message = "" #Message is a fullscreen message
 smallMessage = "" #SmallMessage is a lower banner message
 totalImageCount = 1 #Counter for Display and to monitor paper usage
 photosPerCart = 16 #Selphy takes 16 sheets per tray
+inkLeft = 1
+inkPerCart = 36
 
 #initialise pygame
 pygame.mixer.pre_init(44100, -16, 1, 1024*3) #PreInit Music, plays faster
@@ -45,12 +47,17 @@ def updateDisplay():
     smallText = "Made by Mitesh"
     #paper low warning at 2 shets left
     if(totalImageCount >= (photosPerCart-2)):
-        smallText = "Paper Running Low!..."
+        smallText = "Paper Running Low!"
     #paper out warning.
     if(totalImageCount >= photosPerCart):
-        smallText = "Paper Out!..."
+        smallText = "Paper Out!"
         totalImageCount = 0
-
+        
+    if(inkLeft >= (inkPerCart-2)):
+        smallText = smallText +  " Ink Running Low!"
+    if(inkLeft >= (inkPerCart)):
+        smallText = smallText +  " Out of Ink!"
+    
     background.fill(pygame.Color("black")) #Black background
     smallfont = pygame.font.Font(None, 50) #Small font for banner message
     smallText = smallfont.render(smallText,1, (255,0,0))
@@ -157,43 +164,44 @@ def main(threadName, *args):
             closeme = False
 
         #input_value is the shutter
-        input_value = gpio.input(shutter)
+        shutter_button = gpio.input(shutter)
         #for testing - push p on keybaord to take photograph
         #input_value = (pygame.key.get_pressed()[pygame.K_p] != 0)
-        #input_value2 is photo reprint
-        #input_value2 = gpio.input(reprint) -- no secondary button to reprint yet
+        #reprint_button is photo reprint
+        reprint_button = gpio.input(reprint) -- no secondary button to reprint yet
 
 
 
         #Reprint Button has been pressed
-        # if input_value2==False:
-        #     #If the temp image exists send it to the printer
-        #     if os.path.isfile('/home/pi/Desktop/tempprint.jpg'):
-        #         #Open a connection to cups
-        #         conn = cups.Connection()
-        #         #get a list of printers
-        #         printers = conn.getPrinters()
-        #         #select printer 0
-        #         printer_name = printers.keys()[0]
-        #         message = "Re-Print..."
-        #         updateDisplay()
-        #         #print the buffer file
-        #         printqueuelength = len(conn.getJobs())
-        #         if  printqueuelength > 1:
-        #             message = "PRINT ERROR"
-        #             conn.enablePrinter(printer_name)
-        #             updateDisplay()
-        #         elif printqueuelength == 1:
-        #             smallMessage = "Print Queue Full!"
-        #             updateDisplay()
-        #             conn.enablePrinter(printer_name)
-        #             conn.printFile(printer_name,'/home/pi/Desktop/tempprint.jpg',"PhotoBooth",{})
-        #             time.sleep(20)
-        # message = ""
-        # updateDisplay() # don't know why it was false originally
+        if reprint_button==False:
+            #If the temp image exists send it to the printer
+            if os.path.isfile('/home/pi/Desktop/tempprint.jpg'):
+                #Open a connection to cups
+                conn = cups.Connection()
+                #get a list of printers
+                printers = conn.getPrinters()
+                #select printer 0
+                printer_name = printers.keys()[0]
+                message = "Re-Print..."
+                updateDisplay()
+                #print the buffer file
+                printqueuelength = len(conn.getJobs())
+                if  printqueuelength > 1:
+                    message = "PRINT ERROR"
+                    conn.enablePrinter(printer_name)
+                    updateDisplay()
+                elif printqueuelength == 1:
+                    smallMessage = "Print Queue Full!"
+                    updateDisplay()
+                    conn.enablePrinter(printer_name)
+                    conn.printFile(printer_name,'/home/pi/Desktop/tempprint.jpg',"PhotoBooth",{})
+                    totalImageCount = totalImageCount + 1
+                    time.sleep(20)
+        message = ""
+        updateDisplay()
         #messages to print for
         messagDict = {1: 'Get Ready',2:'Another One',3:'Final One',4:''}
-        if input_value==False:
+        if shutter_button==False:
             subCounter = 0
             #Increment the image number
             imageCounter = imageCounter + 1
